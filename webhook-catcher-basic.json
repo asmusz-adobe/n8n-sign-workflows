@@ -1,0 +1,157 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run only once, no matter how many input items there are.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.function\n\n// Loop over inputs and add a new field called 'myNewField' to the JSON of each one\nc_id = items[0].json.headers['x-adobesign-clientid'];\n\nfor (item of items) {\n  item.json.myNewField = 1;\n  item.json.clientID = c_id;\n}\n\nreturn items;"
+      },
+      "name": "Function",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "POST",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        -160
+      ],
+      "webhookId": "dfe2a7a8-c0f7-41e1-9bf7-15e2b6e98741"
+    },
+    {
+      "parameters": {
+        "path": "test1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "reg-GET",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        20
+      ],
+      "webhookId": "5356a36b-1090-4470-ad87-7cfdb6c18daf"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "x-adobesign-clientid",
+                "value": "={{$node[\"Function\"].json[\"clientID\"]}}"
+              }
+            ]
+          }
+        }
+      },
+      "name": "webhook-response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "webhookData",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"] }}"
+            },
+            {
+              "name": "agreement_ID",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"id\"] }}"
+            },
+            {
+              "name": "all_participants",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"participantSetsInfo\"] }}"
+            },
+            {
+              "name": "agreement_status",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"status\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "SetWebhookData",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        60,
+        -80
+      ]
+    }
+  ],
+  "connections": {
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reg-GET": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook-response": {
+      "main": [
+        [
+          {
+            "node": "SetWebhookData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
